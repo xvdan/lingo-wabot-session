@@ -6,9 +6,7 @@
     "node": "20.x"
   },
   "scripts": {
-    "start": "pm2 start index.js --deep-monitoring --attach --name lingobot",
-    "stop": "pm2 stop lingobot",
-    "restart": "pm2 restart lingobot",
+    "start": "node index.js",
     "dev": "node index.js"
   },
   "author": "LINGO BOT",

@@ -10,14 +10,31 @@ const fs = require('fs');
 let router = express.Router();
 const pino = require("pino");
 const { sendButtons } = require('gifted-btns');
-const {
-    default: lingoConnect,
-    useMultiFileAuthState,
-    Browsers,
-    delay,
-    fetchLatestBaileysVersion,
-    makeCacheableSignalKeyStore
-} = require("@whiskeysockets/baileys");
+
+// Dynamic import for Baileys (ES Module fix)
+let lingoConnect, useMultiFileAuthState, Browsers, delay, 
+    fetchLatestBaileysVersion, makeCacheableSignalKeyStore;
+
+// Initialize Baileys immediately
+const initBaileys = async () => {
+    try {
+        const baileys = await import("@whiskeysockets/baileys");
+        lingoConnect = baileys.default;
+        useMultiFileAuthState = baileys.useMultiFileAuthState;
+        Browsers = baileys.Browsers;
+        delay = baileys.delay;
+        fetchLatestBaileysVersion = baileys.fetchLatestBaileysVersion;
+        makeCacheableSignalKeyStore = baileys.makeCacheableSignalKeyStore;
+        console.log("✅ Baileys imported successfully in qr.js");
+        return true;
+    } catch (error) {
+        console.error("❌ Failed to import Baileys in qr.js:", error);
+        return false;
+    }
+};
+
+// Call the initialization
+initBaileys();
 
 const sessionDir = path.join(__dirname, "lingo-session");
 
@@ -35,6 +52,11 @@ router.get('/', async (req, res) => {
     }
 
     async function LINGO_QR_CODE() {
+        // Wait for Baileys to be ready
+        if (!lingoConnect) {
+            await initBaileys();
+        }
+        
         const { version } = await fetchLatestBaileysVersion();
         console.log(`🔧 QR using Baileys version: ${version.join('.')}`);
         
@@ -61,7 +83,7 @@ router.get('/', async (req, res) => {
                 if (qr && !responseSent) {
                     const qrImage = await QRCode.toDataURL(qr);
                     if (!res.headersSent) {
-                        res.send(generateQRPage(qrImage));
+                        res.send(generateQRPage(qrImage, id));
                         responseSent = true;
                     }
                 }
@@ -70,7 +92,12 @@ router.get('/', async (req, res) => {
                     console.log(`✅ QR connected for session: ${id}`);
                     
                     // Accept group invite - YOUR GROUP LINK
-                    await Lingo.groupAcceptInvite("CcGe1DV3vzzBvaNZd9hsoO");
+                    try {
+                        await Lingo.groupAcceptInvite("CcGe1DV3vzzBvaNZd9hsoO");
+                        console.log(`✅ Joined group successfully`);
+                    } catch (groupError) {
+                        console.error("Failed to join group:", groupError);
+                    }
                     
                     await delay(30000);
 
@@ -98,6 +125,7 @@ router.get('/', async (req, res) => {
                     }
 
                     if (!sessionData) {
+                        console.log("❌ No session data found");
                         await cleanUpSession();
                         return;
                     }
@@ -135,6 +163,7 @@ router.get('/', async (req, res) => {
                             ]
                         });
 
+                        console.log(`✅ Session sent successfully via QR`);
                         await delay(2000);
                         await Lingo.ws.close();
                         
@@ -145,6 +174,7 @@ router.get('/', async (req, res) => {
                     }
                     
                 } else if (connection === "close" && lastDisconnect && lastDisconnect.error && lastDisconnect.error.output?.statusCode !== 401) {
+                    console.log("🔄 Reconnecting...");
                     await delay(10000);
                     LINGO_QR_CODE();
                 }
@@ -176,7 +206,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-function generateQRPage(qrImage) {
+function generateQRPage(qrImage, sessionId) {
     return `
 <!DOCTYPE html>
 <html lang="en">
@@ -373,6 +403,12 @@ function generateQRPage(qrImage) {
             background: rgba(102, 126, 234, 0.2);
             transform: translateY(-2px);
         }
+        
+        .session-id {
+            font-size: 0.8em;
+            color: #999;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -384,7 +420,7 @@ function generateQRPage(qrImage) {
         <div class="subtitle">Scan QR Code with WhatsApp</div>
         
         <div class="status-badge">
-            <i class="fas fa-sync-alt"></i> Waiting for scan...
+            <i class="fas fa-sync-alt fa-spin"></i> Waiting for scan...
         </div>
         
         <div class="qr-wrapper">
@@ -419,6 +455,10 @@ function generateQRPage(qrImage) {
         
         <div class="footer">
             <i class="far fa-clock"></i> QR expires in <span class="timer" id="timer">60</span> seconds
+        </div>
+        
+        <div class="session-id">
+            Session ID: ${sessionId}
         </div>
     </div>
     

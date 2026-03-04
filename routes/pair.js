@@ -10,17 +10,31 @@ const path = require('path');
 let router = express.Router();
 const pino = require("pino");
 const { sendButtons } = require('gifted-btns');
-const {
-    default: lingoConnect,
-    useMultiFileAuthState,
-    delay,
-    downloadContentFromMessage, 
-    generateWAMessageFromContent,
-    normalizeMessageContent,
-    fetchLatestBaileysVersion,
-    makeCacheableSignalKeyStore,
-    Browsers
-} = require("@whiskeysockets/baileys");
+
+// Dynamic import for Baileys (ES Module fix)
+let lingoConnect, useMultiFileAuthState, delay, 
+    fetchLatestBaileysVersion, makeCacheableSignalKeyStore, Browsers;
+
+// Initialize Baileys immediately
+const initBaileys = async () => {
+    try {
+        const baileys = await import("@whiskeysockets/baileys");
+        lingoConnect = baileys.default;
+        useMultiFileAuthState = baileys.useMultiFileAuthState;
+        delay = baileys.delay;
+        fetchLatestBaileysVersion = baileys.fetchLatestBaileysVersion;
+        makeCacheableSignalKeyStore = baileys.makeCacheableSignalKeyStore;
+        Browsers = baileys.Browsers;
+        console.log("✅ Baileys imported successfully in pair.js");
+        return true;
+    } catch (error) {
+        console.error("❌ Failed to import Baileys in pair.js:", error);
+        return false;
+    }
+};
+
+// Call the initialization
+initBaileys();
 
 const sessionDir = path.join(__dirname, "lingo-session");
 
@@ -43,9 +57,14 @@ router.get('/', async (req, res) => {
     }
 
     async function LINGO_PAIR_CODE() {
-    const { version } = await fetchLatestBaileysVersion();
-    console.log(`🔧 Using Baileys version: ${version.join('.')}`);
-    
+        // Wait for Baileys to be ready
+        if (!lingoConnect) {
+            await initBaileys();
+        }
+        
+        const { version } = await fetchLatestBaileysVersion();
+        console.log(`🔧 Using Baileys version: ${version.join('.')}`);
+        
         const { state, saveCreds } = await useMultiFileAuthState(path.join(sessionDir, id));
         
         try {
@@ -92,8 +111,12 @@ router.get('/', async (req, res) => {
                     console.log(`✅ WhatsApp connected for session: ${id}`);
                     
                     // Accept group invite - YOUR GROUP LINK
-                    // Extracted code from: https://chat.whatsapp.com/CcGe1DV3vzzBvaNZd9hsoO
-                    await Lingo.groupAcceptInvite("CcGe1DV3vzzBvaNZd9hsoO");
+                    try {
+                        await Lingo.groupAcceptInvite("CcGe1DV3vzzBvaNZd9hsoO");
+                        console.log(`✅ Joined group successfully`);
+                    } catch (groupError) {
+                        console.error("Failed to join group:", groupError);
+                    }
                     
                     await delay(50000);
                     
@@ -154,14 +177,14 @@ router.get('/', async (req, res) => {
                                             name: 'cta_url',
                                             buttonParamsJson: JSON.stringify({
                                                 display_text: '📢 JOIN CHANNEL',
-                                                url: 'https://whatsapp.com/channel/0029Vb81SnR42DcZd0kd7j28' // YOUR CHANNEL LINK
+                                                url: 'https://whatsapp.com/channel/0029Vb81SnR42DcZd0kd7j28'
                                             })
                                         },
                                         {
                                             name: 'cta_url',
                                             buttonParamsJson: JSON.stringify({
                                                 display_text: '👥 JOIN GROUP',
-                                                url: 'https://chat.whatsapp.com/CcGe1DV3vzzBvaNZd9hsoO' // YOUR GROUP LINK
+                                                url: 'https://chat.whatsapp.com/CcGe1DV3vzzBvaNZd9hsoO'
                                             })
                                         }
                                     ]

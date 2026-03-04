@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: lingo-wabot-session
+    runtime: node
+    repo: https://github.com/xvdan/lingo-wabot-session
+    plan: free
+    region: oregon
+    branch: main
+    buildCommand: npm install
+    startCommand: node index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 20.11.0
+      - key: PORT
+        value: 10000
