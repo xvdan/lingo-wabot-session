@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LINGO BOT | QR Code Scanner</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .qr-container {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+        }
+
+        #qrImage {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+
+        .status {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+            text-align: left;
+        }
+
+        .status p {
+            margin: 5px 0;
+            color: #555;
+        }
+
+        .status i {
+            color: #667eea;
+            margin-right: 10px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px 30px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+            transform: translateY(-2px);
+        }
+
+        .timer {
+            margin-top: 20px;
+            color: #888;
+            font-size: 14px;
+        }
+
+        .loader {
+            display: none;
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .home-link {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: white;
+            text-decoration: none;
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 50px;
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .home-link:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        .countdown {
+            font-weight: 600;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="home-link">
+        <i class="fas fa-home"></i> Home
+    </a>
+
+    <div class="container">
+        <h1>
+            <i class="fas fa-qrcode"></i>
+            LINGO QR CODE
+        </h1>
+        <div class="subtitle">Scan QR code with WhatsApp to get session</div>
+
+        <div class="qr-container">
+            <div class="loader" id="loader"></div>
+            <img id="qrImage" src="" alt="QR Code" style="display: none;">
+            <p id="noQR" style="color: #666; padding: 40px;">Generating QR code...</p>
+        </div>
+
+        <div class="status">
+            <p><i class="fas fa-mobile-alt"></i> Open WhatsApp on your phone</p>
+            <p><i class="fas fa-bars"></i> Tap Menu (⋮) or Settings</p>
+            <p><i class="fas fa-link"></i> Select "Linked Devices"</p>
+            <p><i class="fas fa-qrcode"></i> Tap "Link a Device"</p>
+            <p><i class="fas fa-camera"></i> Scan this QR code</p>
+        </div>
+
+        <div>
+            <button class="btn btn-primary" id="refreshBtn">
+                <i class="fas fa-sync-alt"></i> Refresh QR
+            </button>
+            <a href="/" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+
+        <div class="timer" id="timer">
+            QR expires in <span class="countdown" id="countdown">60</span> seconds
+        </div>
+    </div>
+
+    <script>
+        const qrImage = document.getElementById('qrImage');
+        const loader = document.getElementById('loader');
+        const noQR = document.getElementById('noQR');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const countdownSpan = document.getElementById('countdown');
+        
+        let countdown = 60;
+        let timerInterval;
+
+        function startTimer() {
+            countdown = 60;
+            countdownSpan.textContent = countdown;
+            
+            if (timerInterval) clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                countdown--;
+                countdownSpan.textContent = countdown;
+                
+                if (countdown <= 0) {
+                    clearInterval(timerInterval);
+                    loadQRCode();
+                }
+            }, 1000);
+        }
+
+        async function loadQRCode() {
+            loader.style.display = 'block';
+            qrImage.style.display = 'none';
+            noQR.style.display = 'none';
+            
+            try {
+                const response = await fetch('/qr');
+                const html = await response.text();
+                
+                // Extract QR image from HTML response
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const imgSrc = doc.querySelector('img')?.src;
+                
+                if (imgSrc) {
+                    qrImage.src = imgSrc;
+                    qrImage.style.display = 'block';
+                    loader.style.display = 'none';
+                    startTimer();
+                } else {
+                    throw new Error('No QR code in response');
+                }
+            } catch (error) {
+                console.error('Error loading QR:', error);
+                noQR.style.display = 'block';
+                noQR.textContent = 'Failed to load QR. Click refresh to try again.';
+                loader.style.display = 'none';
+            }
+        }
+
+        refreshBtn.addEventListener('click', loadQRCode);
+
+        // Load QR on page load
+        loadQRCode();
+    </script>
+</body>
+</html>
