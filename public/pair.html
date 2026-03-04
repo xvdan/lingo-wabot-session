@@ -1,344 +1,215 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" id="htmlRoot">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINGO BOT | Pair Code Generator</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LINGO BOT | Pair Code Generator</title>
 
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-        .container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 500px;
-            width: 100%;
-        }
+<style>
+body {
+    font-family: 'Inter', sans-serif;
+    transition: background 0.4s ease, color 0.4s ease;
+}
 
-        h1 {
-            color: #667eea;
-            text-align: center;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
+body.light {
+    background: linear-gradient(135deg,#e0e7ff,#f8fafc);
+}
 
-        .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
-        }
+body.dark {
+    background: linear-gradient(135deg,#0f172a,#1e293b);
+}
 
-        .input-group {
-            margin-bottom: 20px;
-        }
+.glass {
+    backdrop-filter: blur(18px);
+    border-radius: 20px;
+    transition: all 0.3s ease;
+}
 
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
-        }
+body.light .glass {
+    background: rgba(255,255,255,0.75);
+    border: 1px solid rgba(0,0,0,0.05);
+}
 
-        .input-wrapper {
-            position: relative;
-        }
+body.dark .glass {
+    background: rgba(15,23,42,0.75);
+    border: 1px solid rgba(255,255,255,0.08);
+}
 
-        .input-wrapper i {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #667eea;
-        }
+.pair-code {
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 8px;
+}
 
-        input {
-            width: 100%;
-            padding: 15px 15px 15px 45px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-        }
+.spinner {
+    display: none;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,0.3);
+    border-top: 3px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
 
-        input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .btn {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        .result-box {
-            margin-top: 30px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            border-left: 4px solid #667eea;
-            display: none;
-        }
-
-        .pair-code {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #667eea;
-            text-align: center;
-            margin: 20px 0;
-            letter-spacing: 5px;
-            font-family: monospace;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .action-btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .copy-btn {
-            background: #667eea;
-            color: white;
-        }
-
-        .copy-btn:hover {
-            background: #5a6fd8;
-            transform: translateY(-2px);
-        }
-
-        .back-btn {
-            background: #e0e0e0;
-            color: #333;
-            text-decoration: none;
-        }
-
-        .back-btn:hover {
-            background: #d0d0d0;
-            transform: translateY(-2px);
-        }
-
-        .error-message {
-            color: #dc3545;
-            margin-top: 5px;
-            font-size: 14px;
-            display: none;
-        }
-
-        .success-message {
-            color: #28a745;
-            margin-top: 10px;
-            text-align: center;
-            display: none;
-        }
-
-        .spinner {
-            display: none;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .home-link {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            color: white;
-            text-decoration: none;
-            background: rgba(255,255,255,0.2);
-            padding: 10px 20px;
-            border-radius: 50px;
-            backdrop-filter: blur(5px);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-        }
-
-        .home-link:hover {
-            background: rgba(255,255,255,0.3);
-            transform: translateY(-2px);
-        }
-    </style>
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
 </head>
-<body>
-    <a href="/" class="home-link">
-        <i class="fas fa-home"></i> Home
-    </a>
 
-    <div class="container">
-        <h1>
-            <i class="fas fa-link"></i>
-            LINGO PAIR CODE
-        </h1>
-        <div class="subtitle">Enter your WhatsApp number to get pairing code</div>
+<body class="dark min-h-screen flex items-center justify-center px-4">
 
-        <div class="input-group">
-            <label for="phone">Phone Number (with country code)</label>
-            <div class="input-wrapper">
-                <i class="fas fa-phone-alt"></i>
-                <input type="text" id="phone" placeholder="e.g., 254712345678" inputmode="numeric">
-            </div>
-            <div class="error-message" id="phoneError">Please enter a valid phone number</div>
+<!-- Toggle -->
+<button onclick="toggleTheme()" 
+class="absolute top-6 right-6 px-4 py-2 rounded-full text-sm font-medium bg-blue-600 text-white shadow-md hover:scale-105 transition">
+<i class="fas fa-moon mr-2"></i> Toggle Mode
+</button>
+
+<a href="/" class="absolute top-6 left-6 text-sm font-medium flex items-center gap-2 opacity-80 hover:opacity-100 transition">
+<i class="fas fa-arrow-left"></i> Home
+</a>
+
+<div class="glass w-full max-w-md p-8 shadow-2xl">
+
+    <div class="text-center mb-8">
+        <div class="w-16 h-16 mx-auto rounded-full bg-blue-500/20 flex items-center justify-center mb-4">
+            <i class="fas fa-link text-blue-500 text-2xl"></i>
+        </div>
+        <h1 class="text-2xl font-bold">LINGO PAIR CODE</h1>
+        <p class="text-sm opacity-70 mt-2">
+            Enter your WhatsApp number to get pairing code
+        </p>
+    </div>
+
+    <!-- Input -->
+    <div class="mb-6">
+        <label for="phone" class="block text-sm font-medium mb-2">
+            Phone Number (with country code)
+        </label>
+
+        <div class="relative">
+            <i class="fas fa-phone absolute left-4 top-4 opacity-60"></i>
+            <input type="text" id="phone"
+                placeholder="e.g., 254712345678"
+                inputmode="numeric"
+                class="w-full pl-12 pr-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 transition bg-transparent">
         </div>
 
-        <button class="btn" id="generateBtn">
-            <span id="btnText">Generate Code</span>
-            <div class="spinner" id="spinner"></div>
-        </button>
-
-        <div class="result-box" id="resultBox">
-            <p style="text-align: center; color: #666;">Your pairing code is:</p>
-            <div class="pair-code" id="pairCode"></div>
-            <p style="text-align: center; font-size: 14px; color: #666;">
-                Enter this code in WhatsApp > Linked Devices
-            </p>
-            
-            <div class="action-buttons">
-                <button class="action-btn copy-btn" id="copyBtn">
-                    <i class="fas fa-copy"></i> Copy
-                </button>
-                <a href="/" class="action-btn back-btn">
-                    <i class="fas fa-arrow-left"></i> Back
-                </a>
-            </div>
-            
-            <div class="success-message" id="successMessage">
-                <i class="fas fa-check-circle"></i> Code copied to clipboard!
-            </div>
+        <div class="text-red-500 text-sm mt-2 hidden" id="phoneError">
+            Please enter a valid phone number
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script>
-        const phoneInput = document.getElementById('phone');
-        const generateBtn = document.getElementById('generateBtn');
-        const btnText = document.getElementById('btnText');
-        const spinner = document.getElementById('spinner');
-        const resultBox = document.getElementById('resultBox');
-        const pairCode = document.getElementById('pairCode');
-        const copyBtn = document.getElementById('copyBtn');
-        const phoneError = document.getElementById('phoneError');
-        const successMessage = document.getElementById('successMessage');
+    <!-- Button -->
+    <button class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center justify-center gap-2 transition transform hover:-translate-y-1"
+        id="generateBtn">
+        <span id="btnText">Generate Code</span>
+        <div class="spinner" id="spinner"></div>
+    </button>
 
-        function validatePhone(number) {
-            const cleaned = number.replace(/\D/g, '');
-            return cleaned.length >= 10 && cleaned.length <= 15;
+    <!-- Result -->
+    <div class="mt-8 hidden" id="resultBox">
+        <p class="text-center text-sm opacity-70">Your pairing code is:</p>
+
+        <div class="pair-code text-3xl font-bold text-center text-blue-500 my-6" id="pairCode"></div>
+
+        <p class="text-center text-xs opacity-60 mb-6">
+            Enter this code in WhatsApp > Linked Devices
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-4">
+            <button class="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition"
+                id="copyBtn">
+                <i class="fas fa-copy"></i> Copy
+            </button>
+
+            <a href="/" class="flex-1 py-2 rounded-lg bg-gray-400 hover:bg-gray-500 text-white text-center font-medium transition">
+                <i class="fas fa-arrow-left mr-1"></i> Back
+            </a>
+        </div>
+
+        <div class="text-green-500 text-center mt-4 hidden" id="successMessage">
+            <i class="fas fa-check-circle"></i> Code copied to clipboard!
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+<script>
+const phoneInput = document.getElementById('phone');
+const generateBtn = document.getElementById('generateBtn');
+const btnText = document.getElementById('btnText');
+const spinner = document.getElementById('spinner');
+const resultBox = document.getElementById('resultBox');
+const pairCode = document.getElementById('pairCode');
+const copyBtn = document.getElementById('copyBtn');
+const phoneError = document.getElementById('phoneError');
+const successMessage = document.getElementById('successMessage');
+const body = document.body;
+
+function toggleTheme() {
+    body.classList.toggle('dark');
+    body.classList.toggle('light');
+}
+
+function validatePhone(number) {
+    const cleaned = number.replace(/\D/g, '');
+    return cleaned.length >= 10 && cleaned.length <= 15;
+}
+
+generateBtn.addEventListener('click', async () => {
+    const phone = phoneInput.value.trim();
+    
+    if (!validatePhone(phone)) {
+        phoneError.classList.remove('hidden');
+        return;
+    }
+
+    phoneError.classList.add('hidden');
+
+    btnText.style.display = 'none';
+    spinner.style.display = 'inline-block';
+    generateBtn.disabled = true;
+
+    try {
+        const response = await axios.get(`/pair?number=${phone}`);
+        
+        if (response.data.success && response.data.code) {
+            pairCode.textContent = response.data.code;
+            resultBox.classList.remove('hidden');
+        } else {
+            alert('Error generating code. Please try again.');
         }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Service error. Please try again later.');
+    } finally {
+        btnText.style.display = 'inline';
+        spinner.style.display = 'none';
+        generateBtn.disabled = false;
+    }
+});
 
-        generateBtn.addEventListener('click', async () => {
-            const phone = phoneInput.value.trim();
-            
-            if (!validatePhone(phone)) {
-                phoneError.style.display = 'block';
-                phoneInput.style.borderColor = '#dc3545';
-                return;
-            }
+copyBtn.addEventListener('click', () => {
+    const code = pairCode.textContent;
+    navigator.clipboard.writeText(code).then(() => {
+        successMessage.classList.remove('hidden');
+        setTimeout(() => {
+            successMessage.classList.add('hidden');
+        }, 2000);
+    });
+});
 
-            phoneError.style.display = 'none';
-            phoneInput.style.borderColor = '#e0e0e0';
+phoneInput.addEventListener('input', () => {
+    phoneError.classList.add('hidden');
+});
+</script>
 
-            // Show loading
-            btnText.style.display = 'none';
-            spinner.style.display = 'inline-block';
-            generateBtn.disabled = true;
-
-            try {
-                const response = await axios.get(`/pair?number=${phone}`);
-                
-                if (response.data.success && response.data.code) {
-                    pairCode.textContent = response.data.code;
-                    resultBox.style.display = 'block';
-                } else {
-                    alert('Error generating code. Please try again.');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Service error. Please try again later.');
-            } finally {
-                // Hide loading
-                btnText.style.display = 'inline';
-                spinner.style.display = 'none';
-                generateBtn.disabled = false;
-            }
-        });
-
-        copyBtn.addEventListener('click', () => {
-            const code = pairCode.textContent;
-            navigator.clipboard.writeText(code).then(() => {
-                successMessage.style.display = 'block';
-                setTimeout(() => {
-                    successMessage.style.display = 'none';
-                }, 2000);
-            });
-        });
-
-        phoneInput.addEventListener('input', () => {
-            phoneError.style.display = 'none';
-            phoneInput.style.borderColor = '#e0e0e0';
-        });
-    </script>
 </body>
 </html>
