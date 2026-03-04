@@ -40,7 +40,8 @@ app.get('/health', (req, res) => {
     });
 });
 
-app.listen(PORT, () => {
+// At the bottom of your index.js, change this line:
+app.listen(PORT, '0.0.0.0', () => {  // Add '0.0.0.0'
     console.log(`
     ╔══════════════════════════════════╗
     ║     LINGO BOT DEPLOYMENT         ║
@@ -50,6 +51,6 @@ app.listen(PORT, () => {
     ║  URL: http://localhost:${PORT}       ║
     ╚══════════════════════════════════╝
     `);
-});
+});;
 
 module.exports = app;
