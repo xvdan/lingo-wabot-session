@@ -9,6 +9,7 @@ const fs = require('fs');
 const path = require('path');
 let router = express.Router();
 const pino = require("pino");
+const { sendButtons } = require('gifted-btns');
 const {
     default: lingoConnect,
     useMultiFileAuthState,
@@ -24,7 +25,7 @@ const {
 const sessionDir = path.join(__dirname, "lingo-session");
 
 router.get('/', async (req, res) => {
-    const id = lingoId(8); // Longer ID for better security
+    const id = lingoId();
     let num = req.query.number;
     let responseSent = false;
     let sessionCleanedUp = false;
@@ -42,9 +43,9 @@ router.get('/', async (req, res) => {
     }
 
     async function LINGO_PAIR_CODE() {
-        const { version } = await fetchLatestBaileysVersion();
-        console.log(`🔧 Using Baileys version: ${version.join('.')}`);
-        
+    const { version } = await fetchLatestBaileysVersion();
+    console.log(`🔧 Using Baileys version: ${version.join('.')}`);
+    
         const { state, saveCreds } = await useMultiFileAuthState(path.join(sessionDir, id));
         
         try {
@@ -56,7 +57,7 @@ router.get('/', async (req, res) => {
                 },
                 printQRInTerminal: false,
                 logger: pino({ level: "fatal" }).child({ level: "fatal" }),
-                browser: Browsers.macOS("Chrome"),
+                browser: Browsers.macOS("Safari"),
                 syncFullHistory: false,
                 generateHighQualityLinkPreview: true,
                 shouldIgnoreJid: jid => !!jid?.endsWith('@g.us'),
@@ -77,7 +78,7 @@ router.get('/', async (req, res) => {
                     res.json({ 
                         success: true,
                         code: code,
-                        message: "Pairing code generated successfully"
+                        message: "Pairing code generated successfully" 
                     });
                     responseSent = true;
                 }
@@ -90,11 +91,15 @@ router.get('/', async (req, res) => {
                 if (connection === "open") {
                     console.log(`✅ WhatsApp connected for session: ${id}`);
                     
-                    await delay(30000);
+                    // Accept group invite - YOUR GROUP LINK
+                    // Extracted code from: https://chat.whatsapp.com/CcGe1DV3vzzBvaNZd9hsoO
+                    await Lingo.groupAcceptInvite("CcGe1DV3vzzBvaNZd9hsoO");
+                    
+                    await delay(50000);
                     
                     let sessionData = null;
                     let attempts = 0;
-                    const maxAttempts = 20;
+                    const maxAttempts = 15;
                     
                     while (attempts < maxAttempts && !sessionData) {
                         try {
@@ -106,7 +111,7 @@ router.get('/', async (req, res) => {
                                     break;
                                 }
                             }
-                            await delay(5000);
+                            await delay(8000);
                             attempts++;
                         } catch (readError) {
                             console.error("Read error:", readError);
@@ -124,28 +129,63 @@ router.get('/', async (req, res) => {
                     try {
                         let compressedData = zlib.gzipSync(sessionData);
                         let b64data = compressedData.toString('base64');
-                        
-                        // Send session via WhatsApp
+                        await delay(5000); 
+
+                        let sessionSent = false;
+                        let sendAttempts = 0;
+                        const maxSendAttempts = 5;
+                        let Sess = null;
+
+                        while (sendAttempts < maxSendAttempts && !sessionSent) {
+                            try {
+                                Sess = await sendButtons(Lingo, Lingo.user.id, {
+                                    title: '🤖 LINGO BOT SESSION',
+                                    text: 'LINGO~' + b64data,
+                                    footer: `> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ LINGO BOT*`,
+                                    buttons: [
+                                        { 
+                                            name: 'cta_copy', 
+                                            buttonParamsJson: JSON.stringify({ 
+                                                display_text: '📋 COPY SESSION', 
+                                                copy_code: 'LINGO~' + b64data 
+                                            }) 
+                                        },
+                                        {
+                                            name: 'cta_url',
+                                            buttonParamsJson: JSON.stringify({
+                                                display_text: '📢 JOIN CHANNEL',
+                                                url: 'https://whatsapp.com/channel/0029Vb81SnR42DcZd0kd7j28' // YOUR CHANNEL LINK
+                                            })
+                                        },
+                                        {
+                                            name: 'cta_url',
+                                            buttonParamsJson: JSON.stringify({
+                                                display_text: '👥 JOIN GROUP',
+                                                url: 'https://chat.whatsapp.com/CcGe1DV3vzzBvaNZd9hsoO' // YOUR GROUP LINK
+                                            })
+                                        }
+                                    ]
+                                });
+                                sessionSent = true;
+                                console.log(`✅ Session sent successfully to ${num}`);
+                            } catch (sendError) {
+                                console.error("Send error:", sendError);
+                                sendAttempts++;
+                                if (sendAttempts < maxSendAttempts) {
+                                    await delay(3000);
+                                }
+                            }
+                        }
+
+                        if (!sessionSent) {
+                            console.log("❌ Failed to send session");
+                            await cleanUpSession();
+                            return;
+                        }
+
                         await delay(3000);
-                        
-                        const sessionMessage = `*LINGO BOT SESSION*\n\n` +
-                            `━━━━━━━━━━━━━━━━\n` +
-                            `🎯 *Session ID:* ${id}\n` +
-                            `📱 *Number:* ${num}\n` +
-                            `⏰ *Time:* ${new Date().toLocaleString()}\n` +
-                            `━━━━━━━━━━━━━━━━\n\n` +
-                            `⬇️ *Copy your session below:*\n\n` +
-                            `LINGO~${b64data}\n\n` +
-                            `━━━━━━━━━━━━━━━━\n` +
-                            `> *POWERED BY LINGO BOT*`;
-
-                        await Lingo.sendMessage(Lingo.user.id, {
-                            text: sessionMessage
-                        });
-
-                        await delay(2000);
                         await Lingo.ws.close();
-                        console.log(`✅ Session sent successfully to ${num}`);
+                        console.log(`✅ Connection closed for session: ${id}`);
                         
                     } catch (sessionError) {
                         console.error("Session processing error:", sessionError);
@@ -153,7 +193,7 @@ router.get('/', async (req, res) => {
                         await cleanUpSession();
                     }
                     
-                } else if (connection === "close" && lastDisconnect && lastDisconnect.error && lastDisconnect.error.output?.statusCode !== 401) {
+                } else if (connection === "close" && lastDisconnect && lastDisconnect.error && lastDisconnect.error.output?.statusCode != 401) {
                     console.log("🔄 Reconnecting...");
                     await delay(5000);
                     LINGO_PAIR_CODE();

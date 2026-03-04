@@ -1,0 +1,25 @@
+
+---
+
+## **Complete Project Structure**
+lingo-bot-session/
+├── index.js
+├── package.json
+├── app.json
+├── heroku.yml
+├── CNAME
+├── .gitignore
+├── README.md
+├── lingo/
+│ └── index.js
+├── routes/
+│ ├── index.js
+│ ├── pair.js
+│ └── qr.js
+└── public/
+├── index.html
+├── pair.html
+└── qr.html
+
+
+
